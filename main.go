@@ -55,6 +55,7 @@ func main() {
 
 	r := mux.NewRouter()
 	api.Register(r.PathPrefix("/api").Subrouter())
+	r.HandleFunc("/language", handleLanguage)
 	r.HandleFunc("/vars.js", handleVars)
 	r.PathPrefix("/").HandlerFunc(http_helpers.GzipFunc(assetDelivery))
 
@@ -82,6 +83,19 @@ func assetDelivery(res http.ResponseWriter, r *http.Request) {
 
 	res.Header().Set("Content-Type", mime.TypeByExtension(ext))
 	res.Write(assetData)
+}
+
+func handleLanguage(w http.ResponseWriter, r *http.Request) {
+	lang := r.FormValue("code")
+	if len(lang) == 2 {
+		cookie := http.Cookie{
+			Name: "lang",
+			Value: lang,
+			HttpOnly: true,
+		}
+		http.SetCookie(w, &cookie)
+	}
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func handleVars(w http.ResponseWriter, r *http.Request) {

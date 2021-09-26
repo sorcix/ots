@@ -166,7 +166,6 @@
 
 <script>
 import axios from 'axios'
-import AES from 'gibberish-aes/src/gibberish-aes'
 
 export default {
   name: 'App',
@@ -210,11 +209,56 @@ export default {
   },
 
   methods: {
+
+	encrypt(msg, password) {
+const salt = this.CryptoJS.lib.WordArray.random(128/8);
+  
+  const key = this.CryptoJS.PBKDF2(password, salt, {
+      keySize: keySize/32,
+      iterations: iterations
+    });
+
+  const iv = this.CryptoJS.lib.WordArray.random(128/8);
+  
+  const encrypted = this.CryptoJS.AES.encrypt(msg, key, { 
+    iv: iv, 
+    padding: this.CryptoJS.pad.Pkcs7,
+    mode: this.CryptoJS.mode.CBC
+  });
+  
+  // salt, iv will be hex 32 in length
+  // append them to the ciphertext for use  in decryption
+  const transitmessage = salt.toString()+ iv.toString() + encrypted.toString();
+  const encodeB4 = this.CryptoJS.enc.Base64.stringify(transitmessage);
+  return encodeB4;
+	},
+
+	decrypt(msg, password) {
+		const decoded = this.CryptoJS.enc.Utf8.stringify(transitmessage);
+
+  const salt = this.CryptoJS.enc.Hex.parse(decoded.substr(0, 32));
+  const iv = this.CryptoJS.enc.Hex.parse(decoded.substr(32, 32))
+  const encrypted = decoded.substring(64);
+
+  const key = this.CryptoJS.PBKDF2(password, salt, {
+      keySize: keySize/32,
+      iterations: iterations
+    });
+
+  const decrypted = this.CryptoJS.AES.decrypt(encrypted, key, {
+    iv: iv,
+    padding: this.CryptoJS.pad.Pkcs7,
+    mode: this.CryptoJS.mode.CBC
+  })
+  return decrypted;
+	},
+
     // createSecret executes the secret creation after encrypting the secret
     createSecret() {
       this.securePassword = Math.random().toString(36)
         .substring(2)
-      const secret = AES.enc(this.secret, this.securePassword)
+
+		  const secret = this.encrypt(this.secret, this.securePassword)
 
       axios.post('api/create', { secret })
         .then(resp => {
@@ -265,7 +309,7 @@ export default {
         .then(resp => {
           let secret = resp.data.secret
           if (this.securePassword) {
-            secret = AES.dec(secret, this.securePassword)
+				secret = this.decrypt(secret, this.securePassword)
           }
           this.secret = secret
         })

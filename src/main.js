@@ -9,9 +9,11 @@ import './style.scss'
 
 import app from './app.vue'
 import messages from './langs/langs.js'
+import VueCryptojs from 'vue-cryptojs'
 
 Vue.use(BootstrapVue)
 Vue.use(VueI18n)
+Vue.use(VueCryptojs)
 
 const cookieSet = Object.fromEntries(document.cookie.split('; ')
   .map(el => el.split('=')
